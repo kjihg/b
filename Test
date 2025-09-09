@@ -1,0 +1,36 @@
+import win32com.client
+import pythoncom
+import subprocess
+
+# Email subject to trigger on
+TARGET_SUBJECT = "Run Script Now"
+# Path to your .py script
+SCRIPT_TO_RUN = r"C:\path\to\your_script.py"
+
+
+class HandlerClass:
+    def OnNewMailEx(self, received_items_ids):
+        """
+        Outlook passes IDs of new emails as a comma-separated string.
+        """
+        try:
+            outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+            for entry_id in received_items_ids.split(","):
+                mail_item = outlook.GetItemFromID(entry_id)
+                if mail_item.Subject == TARGET_SUBJECT:
+                    print(f"📬 Trigger email detected: {mail_item.Subject}")
+                    self.run_script()
+        except Exception as e:
+            print("Error handling new mail:", e)
+
+    def run_script(self):
+        subprocess.Popen(["python", SCRIPT_TO_RUN], shell=True)
+
+
+if __name__ == "__main__":
+    print("📡 Waiting for new Outlook emails...")
+    outlook = win32com.client.DispatchWithEvents("Outlook.Application", HandlerClass)
+
+    # Keep script alive to listen for events
+    while True:
+        pythoncom.PumpWaitingMessages()
